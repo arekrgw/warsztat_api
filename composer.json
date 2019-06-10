@@ -1,0 +1,12 @@
+{
+    "name": "arekp/authentication",
+    "description": "Authentication API",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "ArekRGW",
+            "email": "arkadiusz.pawlak.web@gmail.com"
+        }
+    ],
+    "require": {}
+}
