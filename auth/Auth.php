@@ -1,14 +1,15 @@
 <?php
   require('../vendor/autoload.php');
   require("../database/database.php");
+  require("Helpers.php");
 
   use \Firebase\JWT\JWT;
 
-  class User {
+  class Auth extends Helpers{
     private $jwt;
     private $newJwt = null;
     private $device;
-    protected $key = 'C90E0D1695F6CE93E80452930CBD3562DCFB63BB656B4846F13E20C2973A2AA119CE421890C91A2823EBF672CAF178FC97583C5374C51AFB7B67B7D0CCE26603';
+    
     public $admin = false;
     public $authenticated = false;
 
@@ -22,31 +23,6 @@
         $this->authenticated = false;
       }
     }
-    //function for generating hashes for JWT tokens !!!! YET TO BE REMOVED BCS NO NEED!!!!!
-    public function generateRandomHash($length = 10) {
-      $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-      $charactersLength = strlen($characters);
-      $randomString = '';
-      for ($i = 0; $i < $length; $i++) {
-          $randomString .= $characters[rand(0, $charactersLength - 1)];
-      }
-      return $randomString;
-    }
-    public function generateJWT($user_id, $device_id, $returnExpiration = false) {
-      $expiration = time() + 60*60*24*7;
-      $token = array(
-        "expiration" => $expiration,
-        "refresh_expiration" => time() + 60*60*24,
-        "user_id" => $user_id,
-        "device_id" => $device_id,
-        "randomizer" => rand()
-      );
-      if($returnExpiration) {
-        return $expiration;
-      }
-      else return JWT::encode($token, $this->key);
-    }
-
     //main authorization function. It sets $authenticated var to true or false 
     public function authorization() {
       
@@ -72,11 +48,11 @@
             $query_result['admin'] ? $this->admin = true : $this->admin = false;
           }
           else {
-            $this->newJwt = $this->generateJWT($query_result['id_user'], $query_result['id_device']);
+            $this->newJwt = self::generateJWT($query_result['id_user'], $query_result['id_device']);
             $update_query = 'UPDATE tokens SET jwt_token=:jwt, expiry_date=:expiry WHERE id_token=:id_token';
             $update_params = array(
               "jwt" => $this->newJwt,
-              "expiry" => $this->generateJWT(null,null, true),
+              "expiry" => self::generateJWT(null,null, true),
               "id_token" => $query_result["id_token"]
             );
             Db::fetch($update_query, $update_params);
@@ -91,6 +67,8 @@
       else {
         $this->authenticated = false;
       }
+
+      return $this->authenticated;
     }
 
     public function new_jwt_token() {
@@ -102,7 +80,7 @@
 
   //testing the class
 
-  $arek = new User;
+  $arek = new Auth;
   echo $arek->authenticated."\n";
   echo $arek->admin."\n";
   echo $arek->new_jwt_token() ? $arek->new_jwt_token() : "BRAK";
