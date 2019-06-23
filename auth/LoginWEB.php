@@ -13,28 +13,25 @@
 
     public function __construct() {
       if(isset($_POST['email']) && isset($_POST['password'])) {
-        $this->password = self::retrunHashedPassword(htmlspecialchars($_POST['password']));
+        $this->password = self::returnHashedPassword(htmlspecialchars($_POST['password']));
         $this->email = htmlspecialchars($_POST['email']);
-        if($this->checkIfUserExists()) {
-          //deviceeeeee
-          if(!isset($_COOKIE['device'])) {
-            $this->createNewDevice($deviceHash);
+        if($this->searchForTheUser()) {
+          if(isset($_COOKIE['device'])) {
+            $this->getDeviceId($_COOKIE['device']);
           }
           else {
-            //if device exist get the id
-
+            $this->createNewDevice();
           }
           $this->set_JWT_and_cookie();
-          $this->logged = true;
+
+
         }
-        else {
-          $this->logged = false;
-        }
+        else $this->logged = false;
       }
     }
 
-    public function checkIfUserExists() {
-      $checkQuery = "SELECT * FROM users WHERE email=:email AND password=:password";
+    public function searchForTheUser() {
+      $checkQuery = "SELECT * FROM users WHERE users.email = :email AND users.password = :password";
       $checkParams = array(
         "email" => $this->email,
         "password" => $this->password
@@ -42,9 +39,11 @@
       $checkResult = Db::fetch($checkQuery, $checkParams);
 
       if($checkResult->rowCount() == 1) {
-        $this->userId = $checkResult->fetch(PDO::FETCH_ASSOC)['id_user'];
+        $checkResult = $checkResult->fetch(PDO::FETCH_ASSOC);
+        $this->userId = $checkResult['id_user'];
         return true;
       }
+      else return false;
     }
 
     public function set_JWT_and_cookie() {
@@ -55,12 +54,35 @@
         "device" => $this->deviceId,
         "user" => $this->userId
       );
-      Db::fetch($checkIfExist, $checkParams);
+      $checkJWTres = Db::fetch($checkIfExist, $checkParams);
+
+      if($checkJWTres->rowCount() == 0) {
+        //insert
+        $setJWT = "INSERT INTO tokens VALUES (null, :device, :jwt, :expiration)";
+        $setParams = array(
+          "device" => $this->deviceId,
+          "jwt" => $this->jwt,
+          "expiration" => $expiration
+        );
+        Db::fetch($setJWT, $setParams);
+
+      }
+      else {
+        //update
+        $setJWT = "UPDATE tokens SET jwt_token = :jwt, expiry_date=:expiration WHERE id_token = :tokenId";
+        $checkJWTres = $checkJWTres->fetch(PDO::FETCH_ASSOC);
+        $setParams = array(
+          "tokenId" => $checkJWTres['id_token'],
+          "jwt" => $this->jwt,
+          "expiration" => $expiration
+        );
+        Db::fetch($setJWT, $setParams);
+      }
       
 
     }
 
-    public function createNewDevice($deviceHash) {
+    public function createNewDevice() {
       $deviceHash = self::generateRandomString(40);
       //setcookie()
       $insertNewDeviceQuery = "INSERT INTO devices VALUES (null, :user, :hash, :last)";
@@ -69,9 +91,21 @@
         "hash" => $deviceHash,
         "last" => time()
       );
-      $result = Db::fetch($insertNewDeviceQuery, $insertNewDeviceParams);
-      $this->deviceId = $result->fetch(PDO::FETCH_ASSOC)['id_device'];
+      Db::fetch($insertNewDeviceQuery, $insertNewDeviceParams);
+      $this->getDeviceId($deviceHash);
+    }
 
-      //insert into database
+    public function getDeviceId($deviceHash) {
+      $getDevId = "SELECT * FROM devices WHERE device_hash=:hash AND id_user = :user";
+      $getParams = array (
+        "hash" => $deviceHash,
+        "user" => $this->userId
+      );
+      $getResult = Db::fetch($getDevId, $getParams)->fetch(PDO::FETCH_ASSOC);
+      $this->deviceId = $getResult['id_device'];
     }
   }
+
+  $arek = new Login;
+  echo $arek->userId."\n";
+  echo $arek->deviceId;

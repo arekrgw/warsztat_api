@@ -33,7 +33,7 @@
       
       $query_result = Db::fetch($authenticate_user_query, $query_parameters);
       if($query_result->rowCount() == 1) {
-        $decoded_jwt = (array) JWT::decode($this->jwt, $this->key, array('HS256'));
+        $decoded_jwt = (array) JWT::decode($this->jwt, self::$key, array('HS256'));
         $query_result = $query_result->fetch(PDO::FETCH_ASSOC);
 
         if(time() < $query_result['expiry_date']) {
