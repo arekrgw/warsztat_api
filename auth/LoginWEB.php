@@ -1,6 +1,7 @@
 <?php
   require("../vendor/autoload.php");
   require("../database/database.php");
+  require("../api_config.php");
   require("Helpers.php");
 
   class Login extends Helpers {
@@ -78,7 +79,9 @@
         );
         Db::fetch($setJWT, $setParams);
       }
-      
+
+      //HTTP ONLY COOKIE
+      setcookie("jwt", $this->jwt, self::generateJWT(null, null, true), "/", $configuration['domain'], false, true);
 
     }
 
@@ -92,6 +95,9 @@
         "last" => time()
       );
       Db::fetch($insertNewDeviceQuery, $insertNewDeviceParams);
+      setcookie("device", $deviceHash, mktime(0, 0, 1, 12, 31, 2038), "/", $configuration['domain'], false, true);
+
+
       $this->getDeviceId($deviceHash);
     }
 

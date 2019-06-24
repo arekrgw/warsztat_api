@@ -1,1 +1,3 @@
-## Warsztat app API
+## Twoje Auto API
+
+An api for "Twoje Auto" application

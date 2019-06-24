@@ -1,6 +1,7 @@
 <?php
   require('../vendor/autoload.php');
   require("../database/database.php");
+  require("../api_config.php");
   require("Helpers.php");
 
   use \Firebase\JWT\JWT;
@@ -8,14 +9,13 @@
   class Auth extends Helpers{
     private $jwt;
     private $newJwt = null;
-    private $device;
     
     public $admin = false;
     public $authenticated = false;
 
     public function __construct($helper_token_var = null, $helper_device_var = null){
       //Checking from which device is request
-      if(isset($_COOKIE['jwt'])) {
+      if(isset($_COOKIE['jwt']) && isset($_COOKIE['device'])) {
         $this->jwt = $_COOKIE['jwt'];
         $this->authorization();
       }
@@ -56,6 +56,7 @@
               "id_token" => $query_result["id_token"]
             );
             Db::fetch($update_query, $update_params);
+            setcookie("jwt", $this->newJwt, self::generateJWT(null, null, true), "/", $configuration['domain'], false, true);
             $this->authenticated = true;
             $query_result['admin'] ? $this->admin = true : $this->admin = false;
           }
